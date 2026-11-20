@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C6B5A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mi Agenda">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<title>Mi Agenda</title>
+<style>:root{color-scheme:light}[hidden]{display:none!important}img{max-width:100%}</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna angosta pensada para el celular. Arriba la semana, luego el resumen del asistente, el formulario y la lista del día con la hora en una columna monoespaciada, como una tabla de horarios. */
+:root {
+  --bg: #F2F5F3;
+  --surface: #FFFFFF;
+  --ink: #14201D;
+  --muted: #586966;
+  --line: #D8E0DD;
+  --accent: #0C6B5A;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEFE9;
+  --high: #B4380F;
+  --high-soft: #F8E3DA;
+  --mid: #8A6100;
+  --low: #586966;
+  --font-display: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1412;
+    --surface: #15201D;
+    --ink: #E5EEEB;
+    --muted: #93A6A1;
+    --line: #26382F;
+    --accent: #4FD1B0;
+    --accent-ink: #06211B;
+    --accent-soft: #16352E;
+    --high: #FF9A73;
+    --high-soft: #3A2018;
+    --mid: #E8C25C;
+    --low: #93A6A1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1412;
+  --surface: #15201D;
+  --ink: #E5EEEB;
+  --muted: #93A6A1;
+  --line: #26382F;
+  --accent: #4FD1B0;
+  --accent-ink: #06211B;
+  --accent-soft: #16352E;
+  --high: #FF9A73;
+  --high-soft: #3A2018;
+  --mid: #E8C25C;
+  --low: #93A6A1;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 var(--font-body);
+  padding-block: calc(20px + env(safe-area-inset-top, 0px)) calc(112px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app { max-width: 620px; margin: 0 auto; display: grid; gap: 18px; }
+
+/* Encabezado */
+.top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.eyebrow { margin: 0 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+h1 { margin: 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font: 700 2.2rem/1.05 var(--font-display); letter-spacing: -.02em; }
+.rel { font: 600 12px var(--font-body); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+
+/* Botones */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-weight: 600; font-size: 14px; }
+.btn:disabled { opacity: .6; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.quiet { background: none; }
+.link { border: 0; background: none; padding: 2px 0; color: var(--muted); font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px; }
+.link:hover { color: var(--ink); }
+
+/* Semana */
+.week { display: grid; grid-template-columns: 32px minmax(0, 1fr) 32px; align-items: center; gap: 4px; }
+.nav { width: 32px; height: 48px; border: 0; background: none; font-size: 24px; line-height: 1; color: var(--muted); border-radius: 8px; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.day { display: grid; justify-items: center; gap: 1px; padding: 8px 0 5px; border: 1px solid transparent; border-radius: 10px; background: none; min-width: 0; }
+.day .dl { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .06em; }
+.day .dn { font: 600 1.15rem/1.2 var(--font-display); }
+.day .dc { min-height: 16px; font: 500 11px/16px var(--font-mono); color: var(--muted); }
+.day.today .dn { text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.day.sel { background: var(--accent); color: var(--accent-ink); }
+.day.sel .dl, .day.sel .dc { color: inherit; opacity: .85; }
+.day.sel .dn { text-decoration-color: var(--accent-ink); }
+
+/* Resumen del asistente */
+.brief { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+.label { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; color: var(--muted); }
+.brief-text { margin: 0; font-size: 1rem; line-height: 1.5; text-wrap: pretty; }
+.progress { display: flex; align-items: center; gap: 10px; font: 500 12px var(--font-mono); color: var(--muted); }
+.bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > span { display: block; height: 100%; width: 0; background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .bar > span { transition: width .25s ease; } }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai { border-top: 1px dashed var(--line); padding-top: 12px; display: grid; gap: 6px; }
+.ai p { margin: 0; }
+.ai .ai-text { white-space: pre-wrap; }
+
+.note { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
+
+/* Formulario */
+.add { display: grid; gap: 10px; }
+.add input[type="text"] { width: 100%; padding: 12px 14px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; font-size: 16px; }
+.fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 520px) { .fields { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.field { display: grid; gap: 4px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted); }
+.field input, .field select { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; font-size: 16px; font-weight: 400; color: var(--ink); }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Lista */
+.sec { margin: 0 0 6px; font: 600 12px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sec:not(:first-child) { margin-top: 20px; }
+.list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.task { position: relative; display: grid; grid-template-columns: 3.3rem 28px minmax(0, 1fr); gap: 8px; align-items: start; padding: 12px 0 12px 12px; border-bottom: 1px solid var(--line); }
+.task::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 2px; background: var(--stripe, var(--line)); }
+.task.p-alta { --stripe: var(--high); }
+.task.p-media { --stripe: var(--mid); }
+.task.p-baja { --stripe: var(--low); }
+.task.done { --stripe: var(--line); }
+.when { display: grid; font: 500 14px/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+.when .end { font-size: 12px; color: var(--muted); }
+.when .none { color: var(--muted); }
+.check { position: relative; width: 28px; height: 28px; margin: -3px 0 0; }
+.check input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.check .box { position: absolute; left: 3px; top: 3px; display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 6px; background: var(--surface); pointer-events: none; }
+.check input:checked + .box { background: var(--accent); border-color: var(--accent); }
+.check input:checked + .box::after { content: ""; width: 5px; height: 10px; margin-top: -2px; border: solid var(--accent-ink); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.check input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.body { min-width: 0; }
+.t { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.done .t { text-decoration: line-through; color: var(--muted); }
+.meta { margin-top: 3px; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 12px; font-size: 12.5px; color: var(--muted); }
+.pr-alta { color: var(--high); font-weight: 600; }
+.pr-media { color: var(--mid); font-weight: 600; }
+.clash { background: var(--high-soft); color: var(--high); border-radius: 6px; padding: 1px 8px; font-weight: 600; }
+.gap { list-style: none; padding: 7px 12px; border-bottom: 1px solid var(--line); background: var(--accent-soft); color: var(--accent); font: 500 12px var(--font-mono); }
+.empty { margin: 0; border: 1px dashed var(--line); border-radius: 12px; padding: 22px 18px; text-align: center; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+.empty p { margin: 0; max-width: 40ch; text-wrap: balance; }
+.empty strong { color: var(--ink); font: 700 1.1rem var(--font-display); }
+
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); max-width: 420px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 10px; background: var(--ink); color: var(--bg); z-index: 20; box-shadow: 0 6px 24px rgba(0, 0, 0, .25); }
+.toast button { border: 0; background: none; color: inherit; font-weight: 700; text-decoration: underline; padding: 4px; }
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="month">Mi agenda</p>
+      <h1><span id="dayTitle">Hoy</span><span class="rel" id="rel" hidden></span></h1>
+    </div>
+    <button type="button" class="btn quiet" id="todayBtn">Ir a hoy</button>
+  </header>
+
+  <nav class="week" aria-label="Semana">
+    <button type="button" class="nav" id="prevWeek" aria-label="Semana anterior">‹</button>
+    <div class="days" id="days"></div>
+    <button type="button" class="nav" id="nextWeek" aria-label="Semana siguiente">›</button>
+  </nav>
+
+  <section class="brief" aria-label="Resumen del día">
+    <p class="label">Resumen del día</p>
+    <p class="brief-text" id="briefText">Cargando tu agenda…</p>
+    <div class="progress" id="progress" hidden>
+      <div class="bar"><span id="progBar"></span></div>
+      <span id="progLabel"></span>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="pullBtn" hidden>Traer atrasadas a hoy</button>
+      <button type="button" class="btn" id="moveBtn" hidden>Pasar pendientes al día siguiente</button>
+    </div>
+  </section>
+
+  <div class="note" id="noteEx" hidden>
+    <span>Hay tareas de ejemplo en tu agenda.</span>
+    <button type="button" class="link" id="clearEx">Quitar ejemplos</button>
+  </div>
+  <form class="add" id="addForm" autocomplete="off">
+    <p class="label" id="formLabel">Nueva tarea</p>
+    <input type="text" id="titleIn" aria-labelledby="formLabel" placeholder="Ej: Dentista 16:30" maxlength="120" required>
+    <div class="fields">
+      <label class="field" for="dateIn">Día<input type="date" id="dateIn"></label>
+      <label class="field" for="timeIn">Hora<input type="time" id="timeIn"></label>
+      <label class="field" for="durIn">Duración<select id="durIn"></select></label>
+      <label class="field" for="prioIn">Prioridad
+        <select id="prioIn">
+          <option value="alta">Alta</option>
+          <option value="media" selected>Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn primary" id="submitBtn">Agregar</button>
+      <button type="button" class="btn quiet" id="cancelBtn" hidden>Cancelar</button>
+    </div>
+  </form>
+
+  <section id="agenda" aria-label="Agenda del día">
+    <p class="empty">Cargando tu agenda…</p>
+  </section>
+
+  <footer class="note">
+    <span>Tus tareas se guardan solo en este dispositivo.</span>
+    <button type="button" class="link" id="exportBtn">Guardar copia</button>
+    <button type="button" class="link" id="importBtn">Restaurar copia</button>
+    <input type="file" id="importIn" accept="application/json,.json" hidden>
+  </footer>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  var LETTERS = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  var MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var PRIO = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+  var PRIO_ORD = { alta: 0, media: 1, baja: 2 };
+  var DURS = [15, 30, 45, 60, 90, 120, 180, 240];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var pad = function (n) { return String(n).padStart(2, '0'); };
+  var key = function (d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+  var parseKey = function (k) { var p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+  var addDays = function (k, n) { var d = parseKey(k); d.setDate(d.getDate() + n); return key(d); };
+  var mondayOf = function (k) { var d = parseKey(k); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return key(d); };
+  var todayKey = function () { return key(new Date()); };
+  var nowMin = function () { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); };
+  var toMin = function (t) { var p = t.split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+  var toTime = function (m) { m = Math.min(m, 1440); return pad(Math.floor(m / 60)) + ':' + pad(m % 60); };
+  var cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
+  var durText = function (m) {
+    if (m < 60) return m + ' min';
+    var h = Math.floor(m / 60), r = m % 60;
+    return r ? h + ' h ' + r + ' min' : h + ' h';
+  };
+
+  function h(tag, attrs) {
+    var el = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v == null || v === false) return;
+        if (k === 'class') el.className = v;
+        else if (k === 'checked') el.checked = !!v;
+        else if (k.indexOf('on') === 0) el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    Array.prototype.slice.call(arguments, 2).flat().forEach(function (kid) {
+      if (kid == null || kid === false) return;
+      el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    });
+    return el;
+  }
+
+  /* Estado */
+  var STORE = 'mi-agenda-v1';
+  var tasks = [];
+  var loaded = true, failed = false;
+  var selected = todayKey();
+  var weekStart = mondayOf(selected);
+  var editingId = null;
+
+  var form = $('addForm'), titleIn = $('titleIn'), timeIn = $('timeIn'), dateIn = $('dateIn');
+  var durIn = $('durIn'), prioIn = $('prioIn'), submitBtn = $('submitBtn'), cancelBtn = $('cancelBtn');
+
+  DURS.forEach(function (m) { durIn.append(h('option', { value: String(m), selected: m === 60 }, durText(m))); });
+  dateIn.value = selected;
+
+  /* Almacenamiento local en este dispositivo */
+  function norm(d) {
+    var x = d.data() || {};
+    return {
+      id: d.id,
+      title: String(x.title || '').slice(0, 120),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(x.date || '') ? x.date : todayKey(),
+      time: /^\d{2}:\d{2}$/.test(x.time || '') ? x.time : '',
+      dur: Number(x.dur) > 0 ? Number(x.dur) : 60,
+      prio: PRIO[x.prio] ? x.prio : 'media',
+      done: !!x.done,
+      ex: !!x.ex,
+      created: Number(x.created) || 0
+    };
+  }
+  function payload(t) {
+    var o = { title: t.title, date: t.date, time: t.time, dur: t.dur, prio: t.prio, done: t.done, created: t.created };
+    if (t.ex) o.ex = true;
+    return o;
+  }
+  function newId() { return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function snapshot() {
+    return tasks.map(function (t) { var o = payload(t); o.id = t.id; return o; });
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE);
+      var arr = raw ? JSON.parse(raw) : [];
+      tasks = (Array.isArray(arr) ? arr : []).map(function (x) {
+        return norm({ id: String(x.id || newId()), data: function () { return x; } });
+      });
+    } catch (e) { tasks = []; }
+  }
+  function commit() {
+    try { localStorage.setItem(STORE, JSON.stringify(snapshot())); }
+    finally { render(); }
+  }
+  async function addTask(data) {
+    tasks.push(norm({ id: newId(), data: function () { return data; } }));
+    commit();
+  }
+  async function updateTask(id, patch) {
+    var t = tasks.find(function (x) { return x.id === id; });
+    if (t) Object.assign(t, patch);
+    commit();
+  }
+  async function removeTask(id) {
+    tasks = tasks.filter(function (x) { return x.id !== id; });
+    commit();
+  }
+  async function restoreTask(id, data) {
+    tasks.push(norm({ id: id, data: function () { return data; } }));
+    commit();
+  }
+  async function guard(fn, msg) {
+    try { await fn(); return true; }
+    catch (e) { toast(msg || 'No se pudo guardar. Inténtalo de nuevo.'); return false; }
+  }
+
+  /* Avisos */
+  var toastTimer;
+  function hideToast() { $('toast').hidden = true; }
+  function toast(msg, label, fn) {
+    var t = $('toast');
+    t.replaceChildren(h('span', null, msg));
+    if (label) t.append(h('button', { type: 'button', onclick: function () { hideToast(); fn(); } }, label));
+    t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, label ? 7000 : 3500);
+  }
+
+  /* Análisis del día */
+  function dayInfo(k) {
+    var list = tasks.filter(function (t) { return t.date === k; });
+    var byTime = function (a, b) { return toMin(a.time) - toMin(b.time) || a.created - b.created; };
+    var timed = list.filter(function (t) { return t.time; }).sort(byTime);
+    var untimed = list.filter(function (t) { return !t.time; }).sort(function (a, b) {
+      return (a.done - b.done) || (PRIO_ORD[a.prio] - PRIO_ORD[b.prio]) || (a.created - b.created);
+    });
+    var pend = list.filter(function (t) { return !t.done; });
+    var pendTimed = timed.filter(function (t) { return !t.done; });
+    var conflicts = new Map();
+    for (var i = 0; i < pendTimed.length; i++) {
+      var a = pendTimed[i], aEnd = toMin(a.time) + a.dur;
+      for (var j = i + 1; j < pendTimed.length; j++) {
+        var b = pendTimed[j];
+        if (toMin(b.time) < aEnd) {
+          if (!conflicts.has(a.id)) conflicts.set(a.id, b.title);
+          if (!conflicts.has(b.id)) conflicts.set(b.id, a.title);
+        } else break;
+      }
+    }
+    var gaps = new Map(), cursor = null;
+    pendTimed.forEach(function (t) {
+      var s = toMin(t.time), e = s + t.dur;
+      if (cursor !== null && s - cursor >= 45) gaps.set(t.id, { from: cursor, to: s });
+      cursor = cursor === null ? e : Math.max(cursor, e);
+    });
+    return { k: k, list: list, timed: timed, untimed: untimed, pend: pend, pendTimed: pendTimed,
+      conflicts: conflicts, gaps: gaps, done: list.length - pend.length };
+  }
+  function bigGap(pendTimed, isToday) {
+    var cur = isToday ? Math.max(nowMin(), 420) : 420, end = 1320, best = null;
+    function consider(g) { if (g.to - g.from >= 30 && (!best || g.to - g.from > best.to - best.from)) best = g; }
+    for (var i = 0; i < pendTimed.length; i++) {
+      var s = toMin(pendTimed[i].time), e = s + pendTimed[i].dur;
+      if (e <= cur) continue;
+      if (s > cur) consider({ from: cur, to: Math.min(s, end) });
+      cur = Math.max(cur, e);
+      if (cur >= end) break;
+    }
+    if (end - cur > 0) consider({ from: cur, to: end });
+    return best;
+  }
+  function overdue() {
+    var today = todayKey();
+    return tasks.filter(function (t) { return !t.done && t.date < today; });
+  }
+
+  function briefSentence(info) {
+    if (!loaded) return failed ? 'Todavía no logro conectar con tu agenda.' : 'Cargando tu agenda…';
+    var k = info.k, today = todayKey(), list = info.list, pend = info.pend;
+    if (!tasks.length) return 'Tu agenda está vacía. Anota tu primera tarea y arma el día desde aquí.';
+    if (!list.length) return k < today ? 'No anotaste nada para este día.' : 'Todavía no hay nada anotado para este día.';
+    if (!pend.length) return 'Todo listo: completaste ' + info.done + ' de ' + list.length + (list.length === 1 ? ' tarea.' : ' tareas.');
+    if (k < today) return 'Quedaron ' + pend.length + (pend.length === 1 ? ' tarea sin hacer.' : ' tareas sin hacer.');
+    var out = [];
+    out.push(pend.length + (pend.length === 1 ? ' tarea pendiente' : ' tareas pendientes') +
+      (info.pendTimed.length ? ', ' + info.pendTimed.length + ' con hora.' : '.'));
+    if (info.pendTimed.length) {
+      var next = info.pendTimed[0];
+      if (k === today) {
+        var n = nowMin();
+        next = info.pendTimed.find(function (t) { return toMin(t.time) + t.dur > n; }) || null;
+      }
+      if (next) out.push((k === today ? 'Lo siguiente es «' : 'Partes con «') + next.title + '» a las ' + next.time + '.');
+    }
+    if (info.conflicts.size) {
+      var first = info.pendTimed.find(function (t) { return info.conflicts.has(t.id); });
+      out.push('Ojo: «' + first.title + '» se cruza con «' + info.conflicts.get(first.id) + '».');
+    }
+    var g = bigGap(info.pendTimed, k === today);
+    if (g && info.pendTimed.length) out.push('Tu bloque libre más largo es de ' + toTime(g.from) + ' a ' + toTime(g.to) + ' (' + durText(g.to - g.from) + ').');
+    var over = k === today ? overdue().length : 0;
+    if (over) out.push('Tienes ' + over + (over === 1 ? ' tarea atrasada' : ' tareas atrasadas') + ' de días anteriores.');
+    return out.join(' ');
+  }
+
+  /* Dibujo */
+  function renderHead() {
+    var d = parseKey(selected);
+    $('month').textContent = 'Mi agenda · ' + cap(MONTHS[d.getMonth()]) + ' ' + d.getFullYear();
+    $('dayTitle').textContent = cap(DAYS[d.getDay()]) + ' ' + d.getDate();
+    var diff = Math.round((d - parseKey(todayKey())) / 864e5);
+    var rel = diff === 0 ? 'Hoy' : diff === 1 ? 'Mañana' : diff === -1 ? 'Ayer' : '';
+    $('rel').textContent = rel;
+    $('rel').hidden = !rel;
+  }
+  function renderWeek() {
+    var box = $('days'), today = todayKey();
+    box.replaceChildren();
+    for (var i = 0; i < 7; i++) {
+      (function (k) {
+        var d = parseKey(k);
+        var pending = tasks.filter(function (t) { return t.date === k && !t.done; }).length;
+        var label = cap(DAYS[d.getDay()]) + ' ' + d.getDate() + (pending ? ', ' + pending + (pending === 1 ? ' pendiente' : ' pendientes') : '');
+        box.append(h('button', {
+          type: 'button',
+          class: 'day' + (k === selected ? ' sel' : '') + (k === today ? ' today' : ''),
+          'aria-pressed': k === selected ? 'true' : 'false',
+          'aria-label': label,
+          onclick: function () { selectDay(k); }
+        },
+          h('span', { class: 'dl' }, LETTERS[d.getDay()]),
+          h('span', { class: 'dn' }, d.getDate()),
+          h('span', { class: 'dc' }, pending ? pending : '')));
+      })(addDays(weekStart, i));
+    }
+  }
+  function renderBrief(info) {
+    $('briefText').textContent = briefSentence(info);
+    var total = info.list.length;
+    $('progress').hidden = !total;
+    $('progLabel').textContent = info.done + ' de ' + total + ' hechas';
+    $('progBar').style.width = (total ? Math.round(info.done / total * 100) : 0) + '%';
+    $('moveBtn').hidden = !info.pend.length;
+    var over = overdue();
+    var showPull = selected === todayKey() && over.length > 0;
+    $('pullBtn').hidden = !showPull;
+    $('pullBtn').textContent = 'Traer atrasadas a hoy (' + over.length + ')';
+  }
+  function renderNotes() {
+    $('noteEx').hidden = !tasks.some(function (t) { return t.ex; });
+  }
+  function taskEl(t, info) {
+    var clash = !t.done && info.conflicts.has(t.id);
+    var cb = h('input', { type: 'checkbox', id: 'c-' + t.id, checked: t.done, 'aria-label': 'Marcar como hecha: ' + t.title });
+    cb.addEventListener('change', function () { guard(function () { return updateTask(t.id, { done: cb.checked }); }); });
+    var when = t.time
+      ? [h('span', { class: 'start' }, t.time), h('span', { class: 'end' }, toTime(toMin(t.time) + t.dur))]
+      : [h('span', { class: 'none' }, '—')];
+    return h('li', { class: 'task p-' + t.prio + (t.done ? ' done' : '') },
+      h('div', { class: 'when' }, when),
+      h('label', { class: 'check' }, cb, h('span', { class: 'box' })),
+      h('div', { class: 'body' },
+        h('p', { class: 't' }, t.title),
+        h('div', { class: 'meta' },
+          t.time ? h('span', null, durText(t.dur)) : null,
+          h('span', { class: 'pr-' + t.prio }, PRIO[t.prio]),
+          clash ? h('span', { class: 'clash' }, 'Se cruza con «' + info.conflicts.get(t.id) + '»') : null,
+          h('button', { type: 'button', class: 'link', onclick: function () { startEdit(t); } }, 'Editar'),
+          h('button', { type: 'button', class: 'link', onclick: function () { remove(t); } }, 'Quitar'))));
+  }
+  function renderList(info) {
+    var root = $('agenda');
+    root.replaceChildren();
+    if (!loaded) {
+      root.append(h('p', { class: 'empty' }, failed
+        ? 'No logramos conectar con tu agenda todavía. Seguimos intentando; lo que agregues se guardará cuando vuelva la conexión.'
+        : 'Cargando tu agenda…'));
+      return;
+    }
+    if (!tasks.length) {
+      root.append(h('div', { class: 'empty' },
+        h('strong', null, 'Tu agenda está vacía'),
+        h('p', null, 'Anota tareas con su hora y te aviso cuando se cruzan, qué viene después y cuánto tiempo libre te queda.'),
+        h('button', { type: 'button', class: 'btn', onclick: seed }, 'Cargar un día de ejemplo')));
+      return;
+    }
+    if (!info.list.length) {
+      root.append(h('p', { class: 'empty' }, 'Nada anotado para este día.'));
+      return;
+    }
+    if (info.timed.length) {
+      var ul = h('ul', { class: 'list' });
+      info.timed.forEach(function (t) {
+        var g = info.gaps.get(t.id);
+        if (g) ul.append(h('li', { class: 'gap' }, 'Libre ' + toTime(g.from) + ' – ' + toTime(g.to) + ' · ' + durText(g.to - g.from)));
+        ul.append(taskEl(t, info));
+      });
+      root.append(h('h2', { class: 'sec' }, 'Con hora'), ul);
+    }
+    if (info.untimed.length) {
+      root.append(h('h2', { class: 'sec' }, 'Sin hora'),
+        h('ul', { class: 'list' }, info.untimed.map(function (t) { return taskEl(t, info); })));
+    }
+  }
+  function render() {
+    var ae = document.activeElement && document.activeElement.id;
+    var info = dayInfo(selected);
+    renderHead(); renderWeek(); renderBrief(info); renderNotes(); renderList(info);
+    if (ae && ae.indexOf('c-') === 0) { var n = document.getElementById(ae); if (n) n.focus(); }
+  }
+
+  /* Acciones */
+  function selectDay(k) {
+    selected = k;
+    weekStart = mondayOf(k);
+    if (!editingId) dateIn.value = k;
+    render();
+  }
+  function resetForm() {
+    editingId = null;
+    form.reset();
+    durIn.value = '60';
+    prioIn.value = 'media';
+    dateIn.value = selected;
+    submitBtn.textContent = 'Agregar';
+    cancelBtn.hidden = true;
+    $('formLabel').textContent = 'Nueva tarea';
+  }
+  function startEdit(t) {
+    editingId = t.id;
+    titleIn.value = t.title;
+    timeIn.value = t.time;
+    dateIn.value = t.date;
+    if (!Array.prototype.some.call(durIn.options, function (o) { return o.value === String(t.dur); })) {
+      durIn.append(h('option', { value: String(t.dur) }, durText(t.dur)));
+    }
+    durIn.value = String(t.dur);
+    prioIn.value = t.prio;
+    submitBtn.textContent = 'Guardar cambios';
+    cancelBtn.hidden = false;
+    $('formLabel').textContent = 'Editar tarea';
+    form.scrollIntoView({ block: 'center' });
+    titleIn.focus();
+  }
+  function remove(t) {
+    var data = payload(t);
+    guard(async function () {
+      await removeTask(t.id);
+      toast('Tarea eliminada', 'Deshacer', function () { guard(function () { return restoreTask(t.id, data); }); });
+    });
+  }
+  function parseTime(s) {
+    var m = s.match(/(?:\ba las\s+)?\b([01]?\d|2[0-3])[:h]([0-5]\d)\b|\ba las\s+([01]?\d|2[0-3])\b/i);
+    if (!m) return null;
+    var hh = m[1] !== undefined ? m[1] : m[3];
+    var mm = m[1] !== undefined ? m[2] : '00';
+    var rest = (s.slice(0, m.index) + ' ' + s.slice(m.index + m[0].length))
+      .replace(/\s{2,}/g, ' ').replace(/^[\s,.\-–:]+|[\s,.\-–:]+$/g, '').trim();
+    if (!rest) return null;
+    return { time: pad(Number(hh)) + ':' + mm, title: rest };
+  }
+  async function seed() {
+    var k = selected, base = Date.now();
+    var ex = [
+      ['Reunión de equipo', '09:00', 60, 'alta'],
+      ['Llamar al banco', '09:30', 30, 'media'],
+      ['Revisar correos', '11:00', 30, 'baja'],
+      ['Almuerzo', '13:30', 60, 'baja'],
+      ['Gimnasio', '19:00', 60, 'media'],
+      ['Comprar pan y verduras', '', 60, 'baja'],
+      ['Pagar las cuentas del mes', '', 60, 'alta']
+    ];
+    var ok = await guard(async function () {
+      for (var i = 0; i < ex.length; i++) {
+        await addTask({ title: ex[i][0], date: k, time: ex[i][1], dur: ex[i][2], prio: ex[i][3], done: false, ex: true, created: base + i });
+      }
+    });
+    if (ok) toast('Cargué un día de ejemplo. Puedes quitarlo cuando quieras.');
+  }
+  async function clearExamples() {
+    var list = tasks.filter(function (t) { return t.ex; });
+    var ok = await guard(async function () { for (var i = 0; i < list.length; i++) await removeTask(list[i].id); });
+    if (ok) toast('Quité los ejemplos.');
+  }
+  async function moveAll(list, patchFor, msg) {
+    var ok = await guard(async function () { for (var i = 0; i < list.length; i++) await updateTask(list[i].id, patchFor(list[i])); });
+    if (ok) toast(msg);
+  }
+
+  /* Eventos */
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var title = titleIn.value.trim();
+    if (!title) return;
+    var time = timeIn.value, auto = false;
+    if (!time) {
+      var p = parseTime(title);
+      if (p) { time = p.time; title = p.title; auto = true; }
+    }
+    var date = dateIn.value || selected;
+    var dur = Number(durIn.value) || 60;
+    var prio = prioIn.value;
+    submitBtn.disabled = true;
+    var ok;
+    if (editingId) {
+      var id = editingId;
+      ok = await guard(function () { return updateTask(id, { title: title, date: date, time: time, dur: dur, prio: prio }); });
+    } else {
+      ok = await guard(function () { return addTask({ title: title, date: date, time: time, dur: dur, prio: prio, done: false, created: Date.now() }); });
+    }
+    submitBtn.disabled = false;
+    if (!ok) return;
+    resetForm();
+    selectDay(date);
+    if (auto) toast('Anoté «' + title + '» a las ' + time + '.');
+  });
+  cancelBtn.addEventListener('click', resetForm);
+  $('todayBtn').addEventListener('click', function () { selectDay(todayKey()); });
+  $('prevWeek').addEventListener('click', function () { selectDay(addDays(selected, -7)); });
+  $('nextWeek').addEventListener('click', function () { selectDay(addDays(selected, 7)); });
+  $('clearEx').addEventListener('click', clearExamples);
+  $('exportBtn').addEventListener('click', function () {
+    var blob = new Blob([JSON.stringify({ app: 'mi-agenda', version: 1, tasks: snapshot() }, null, 2)], { type: 'application/json' });
+    var a = h('a', { href: URL.createObjectURL(blob), download: 'mi-agenda-' + todayKey() + '.json' });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    toast('Descargué tu copia de seguridad.');
+  });
+  $('importBtn').addEventListener('click', function () { $('importIn').click(); });
+  $('importIn').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    this.value = '';
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var data = JSON.parse(String(r.result));
+        var arr = Array.isArray(data) ? data : data.tasks;
+        if (!Array.isArray(arr)) throw new Error('formato');
+        var have = new Set(tasks.map(function (t) { return t.id; }));
+        var added = 0;
+        arr.forEach(function (x) {
+          if (!x || typeof x.title !== 'string' || !x.title.trim()) return;
+          var id = x.id ? String(x.id) : newId();
+          if (have.has(id)) return;
+          tasks.push(norm({ id: id, data: function () { return x; } }));
+          have.add(id);
+          added++;
+        });
+        commit();
+        toast(added ? 'Restauré ' + added + (added === 1 ? ' tarea.' : ' tareas.') : 'Esa copia no tenía tareas nuevas.');
+      } catch (e) { toast('No pude leer ese archivo. Elige una copia de Mi Agenda.'); }
+    };
+    r.readAsText(f);
+  });
+  $('moveBtn').addEventListener('click', function () {
+    var list = dayInfo(selected).pend, next = addDays(selected, 1);
+    moveAll(list, function () { return { date: next }; },
+      list.length + (list.length === 1 ? ' tarea pasó' : ' tareas pasaron') + ' al día siguiente.');
+  });
+  $('pullBtn').addEventListener('click', function () {
+    var list = overdue(), today = todayKey();
+    moveAll(list, function () { return { date: today, time: '' }; },
+      list.length + (list.length === 1 ? ' tarea atrasada quedó' : ' tareas atrasadas quedaron') + ' en hoy, sin hora.');
+  });
+
+  /* Arranque */
+  load();
+  render();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>
