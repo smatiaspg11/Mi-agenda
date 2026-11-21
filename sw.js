@@ -1,4 +1,4 @@
-var CACHE = 'mi-agenda-v1';
+var CACHE = 'mi-agenda-v2';
 var FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -14,15 +14,18 @@ self.addEventListener('activate', function (e) {
 });
 
 // Responde con lo guardado y actualiza en segundo plano, así la app abre rápido y sin internet.
+// Las visitas a la página (incluidos los atajos con ?accion=) usan siempre index.html.
 self.addEventListener('fetch', function (e) {
-  if (e.request.method !== 'GET') return;
-  if (new URL(e.request.url).origin !== self.location.origin) return;
+  var req = e.request;
+  if (req.method !== 'GET') return;
+  if (new URL(req.url).origin !== self.location.origin) return;
+  var nav = req.mode === 'navigate';
   e.respondWith(
-    caches.match(e.request).then(function (cached) {
-      var net = fetch(e.request).then(function (res) {
+    (nav ? caches.match('index.html') : caches.match(req)).then(function (cached) {
+      var net = fetch(req).then(function (res) {
         if (res && res.ok) {
           var copy = res.clone();
-          caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+          caches.open(CACHE).then(function (c) { c.put(nav ? 'index.html' : req, copy); });
         }
         return res;
       }).catch(function () { return cached || caches.match('index.html'); });
